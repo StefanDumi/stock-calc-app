@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <!-- PWA / iPhone app support -->
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Stock Valuation"
+  >
+  <meta
+    name="theme-color"
+    content="#2c7be5"
+  >
+
+  <link
+    rel="manifest"
+    href="data:application/manifest+json,{\"
+    name\":\"Stock
+    Valuation
+    Tool\",\"short_name\":\"Valuation\",\"start_url\":\".\",\"display\":\"standalone\",\"background_color\":\"#eef1f5\",\"theme_color\":\"#2c7be5\",\"icons\":[{\"src\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLlVAAAA90lEQVR4Ae3XsQ2DMBAF0Z8kYyAzsAmYgE3YAmZgE7YgE3YAiZhA7YQj0vEihQ6UkNzUaz2+miVj7XwjlzAIXazhbugzuDUFcAUwvx6ieRP70dNDO4BjoMnIKPQGd/wcgUp3NEPoBPcAckU4iigFsAVX4AhDn8ApXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZXgHF4BZfgP/6IDdnh3oX1NwCAVccahJgN9zeAAAAAElFTkSuQmCC\",\"sizes\":\"192x192\",\"type\":\"image/png\"}]}"
+  />
+  <title>Advanced Stock Valuation Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      width: 100%;
+      padding: 30px 16px;
+      /* slightly gray calm background */
+      background: linear-gradient(180deg, #e2e6ec 0%, #eef1f5 50%, #f5f6f8 100%);
+    }
+
+    /* prevent horizontal restriction on small screens */
+    html,
+    body {
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      background: white;
+      padding: 28px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 9px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #cfd5df;
+      font-size: 14px;
+      background: white;
+    }
+
+    button {
+      margin-top: 22px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2c7be5;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d63c8;
+    }
+
+    .results {
+      margin-top: 25px;
+      background: #f3f5f8;
+      padding: 16px;
+      border-radius: 8px;
+    }
+
+    .result-row {
+      margin: 7px 0;
+      font-size: 15px;
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .scenario {
+      background: #f8f9fb;
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e2e6ee;
+    }
+
+    canvas {
+      margin-top: 35px;
+      max-width: none;
+    }
+
+    .chart-scroll {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      padding-bottom: 10px;
+    }
+
+    .chart-scroll canvas {
+      min-width: 650px;
+      /* allows horizontal swipe on phones */
+    }
+
+    .explanation {
+      margin-top: 20px;
+      background: #eef2f7;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    /* info tooltip icon */
+    .info {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      font-size: 11px;
+      border-radius: 50%;
+      background: #2c7be5;
+      color: white;
+      margin-left: 6px;
+      cursor: help;
+      position: relative;
+    }
+
+    .info::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2b2f36;
+      color: white;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      width: 220px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+      line-height: 1.3;
+    }
+
+    .info:hover::after {
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width:850px) {
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 22px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>Advanced Stock Valuation Tool</h1>
+
+    <div class="grid">
+
+      <div>
+
+        <label>Current Stock Price</label>
+        <input
+          id="price"
+          type="number"
+          step="0.01"
+        >
+
+        <label>EPS Year 1</label>
+        <input
+          id="eps1"
+          type="number"
+          step="0.01"
+        >
+
+        <label>EPS Year 2</label>
+        <input
+          id="eps2"
+          type="number"
+          step="0.01"
+        >
+
+        <label>EPS Year 3</label>
+        <input
+          id="eps3"
+          type="number"
+          step="0.01"
+        >
+
+        <label>Current P/E Ratio</label>
+        <input
+          id="pe"
+          type="number"
+          step="0.01"
+        >
+
+      </div>
+
+      <div>
+
+        <label>Bear Case P/E Change %</label>
+        <input
+          id="bearPE"
+          type="number"
+          value="-30"
+        >
+
+        <label>Base Case P/E Change %</label>
+        <input
+          id="basePE"
+          type="number"
+          value="-10"
+        >
+
+        <label>Bull Case P/E Change %</label>
+        <input
+          id="bullPE"
+          type="number"
+          value="10"
+        >
+
+        <label>Investment Horizon (years)</label>
+        <select id="years">
+          <option value="3">3</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+        </select>
+
+        <button onclick="calculate()">Run Analysis</button>
+
+      </div>
+    </div>
+
+    <div class="results">
+
+      <div class="result-row">Average EPS: <span id="avgEps">-</span></div>
+
+      <div class="result-row">EPS Growth Rate: <span id="epsGrowth">-</span></div>
+
+      <div class="result-row">
+        PEG Ratio: <span id="peg">-</span>
+        <span
+          class="info"
+          data-tooltip="PEG Ratio = P/E Ratio ÷ EPS Growth Rate. It measures valuation relative to growth. A PEG around 1 is often considered fairly valued."
+        >i</span>
+      </div>
+
+      <div class="result-row">
+        Intrinsic Value (Peter Lynch approx): <span id="intrinsic">-</span>
+        <span
+          class="info"
+          data-tooltip="Peter Lynch approximation: Intrinsic Value ≈ EPS × Growth Rate (%). It assumes a company is fairly valued when P/E roughly equals its growth rate."
+        >i</span>
+      </div>
+
+    </div>
+
+    <h3>Scenario Results</h3>
+
+    <div class="scenario-grid">
+
+      <div class="scenario">
+        <b>Bear</b>
+        <div>Price: <span id="bearPrice">-</span></div>
+        <div>CAGR: <span id="bearCagr">-</span></div>
+      </div>
+
+      <div class="scenario">
+        <b>Base</b>
+        <div>Price: <span id="basePrice">-</span></div>
+        <div>CAGR: <span id="baseCagr">-</span></div>
+      </div>
+
+      <div class="scenario">
+        <b>Bull</b>
+        <div>Price: <span id="bullPrice">-</span></div>
+        <div>CAGR: <span id="bullCagr">-</span></div>
+      </div>
+
+    </div>
+
+    <div class="chart-scroll"><canvas id="scenarioChart"></canvas></div>
+    <div class="chart-scroll"><canvas id="monteChart"></canvas></div>
+
+    <div
+      id="monteExplanation"
+      class="explanation"
+    ></div>
+
+  </div>
+
+  <script>
+
+    let scenarioChart
+    let monteChart
+    let montePEValues = []
+    let montePEChanges = []
+
+    function calculate() {
+
+      const price = parseFloat(document.getElementById("price").value)
+      const eps1 = parseFloat(document.getElementById("eps1").value)
+      const eps2 = parseFloat(document.getElementById("eps2").value)
+      const eps3 = parseFloat(document.getElementById("eps3").value)
+      const pe = parseFloat(document.getElementById("pe").value)
+
+      const bearPE = parseFloat(document.getElementById("bearPE").value)
+      const basePE = parseFloat(document.getElementById("basePE").value)
+      const bullPE = parseFloat(document.getElementById("bullPE").value)
+
+      const years = parseInt(document.getElementById("years").value)
+
+      if ([price, eps1, eps2, eps3, pe].some(v => isNaN(v))) {
+        alert("Fill all inputs")
+        return
+      }
+
+      const avgEps = (eps1 + eps2 + eps3) / 3
+
+      const epsGrowth = ((eps3 / eps1) ** (1 / 2) - 1) * 100
+
+      const peg = pe / epsGrowth
+
+      const intrinsic = epsGrowth * eps1
+
+      function scenario(change) {
+
+        const newPE = pe * (1 + change / 100)
+        const estPrice = avgEps * newPE
+
+        const cagr = (Math.pow(estPrice / price, 1 / years) - 1) * 100
+
+        return { price: estPrice, cagr: cagr }
+
+      }
+
+      const bear = scenario(bearPE)
+      const base = scenario(basePE)
+      const bull = scenario(bullPE)
+
+
+      document.getElementById("avgEps").innerText = avgEps.toFixed(2)
+      document.getElementById("epsGrowth").innerText = epsGrowth.toFixed(2) + " %"
+      document.getElementById("peg").innerText = peg.toFixed(2)
+      document.getElementById("intrinsic").innerText = intrinsic.toFixed(2)
+
+
+      document.getElementById("bearPrice").innerText = bear.price.toFixed(2)
+      document.getElementById("bearCagr").innerText = bear.cagr.toFixed(2) + " %"
+
+
+      document.getElementById("basePrice").innerText = base.price.toFixed(2)
+      document.getElementById("baseCagr").innerText = base.cagr.toFixed(2) + " %"
+
+
+      document.getElementById("bullPrice").innerText = bull.price.toFixed(2)
+      document.getElementById("bullCagr").innerText = bull.cagr.toFixed(2) + " %"
+
+      createScenarioChart(bear, base, bull)
+      createMonteCarlo(price, avgEps, pe, years)
+
+    }
+
+    function createScenarioChart(bear, base, bull) {
+
+      if (scenarioChart) { scenarioChart.destroy() }
+
+      const ctx = document.getElementById("scenarioChart")
+
+      scenarioChart = new Chart(ctx, { type: "bar", data: { labels: ["Bear", "Base", "Bull"], datasets: [{ label: "Estimated Price", data: [bear.price, base.price, bull.price] }] } })
+
+    }
+
+    function randomNormal(mean, sd) {
+      let u = Math.random()
+      let v = Math.random()
+      return mean + sd * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+    }
+
+    function createMonteCarlo(price, avgEps, pe, years) {
+
+      let results = []
+      montePEValues = []
+      montePEChanges = []
+
+      for (let i = 0; i < 500; i++) {
+
+        let peChange = randomNormal(0, 20)
+
+        let newPE = pe * (1 + peChange / 100)
+
+        let futurePrice = avgEps * newPE
+
+        results.push(futurePrice)
+        montePEValues.push(newPE)
+        montePEChanges.push(peChange)
+
+      }
+
+      if (monteChart) { monteChart.destroy() }
+
+      const ctx = document.getElementById("monteChart")
+
+      monteChart = new Chart(ctx, {
+        type: "line",
+        data: { labels: results.map((_, i) => i), datasets: [{ label: "Monte Carlo Price Simulation", data: results }] },
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const index = context.dataIndex
+                  const price = context.raw
+                  const peValue = montePEValues[index]
+                  const peChange = montePEChanges[index]
+                  return [
+                    "Estimated Price: " + price.toFixed(2),
+                    "P/E Used: " + peValue.toFixed(2),
+                    "P/E Change: " + peChange.toFixed(2) + "%"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      })
+
+      const minChange = Math.min(...montePEChanges)
+      const maxChange = Math.max(...montePEChanges)
+
+      const explanation = `Monte Carlo simulation generated 500 random scenarios for the P/E ratio.
+The variation follows a normal distribution with mean 0% and standard deviation of 20%.
+
+Observed variation in this simulation ranged from approximately ${minChange.toFixed(2)}% to ${maxChange.toFixed(2)}% relative to the current P/E.
+
+Each point on the chart represents one simulated future scenario using:
+Future Price = Average EPS × Randomized P/E.`
+
+      document.getElementById("monteExplanation").innerText = explanation
+
+    }
+
+  </script>
+
+  <script>
+
+    /* Register lightweight service worker so the app can be installed */
+    if ('serviceWorker' in navigator) {
+
+      const swCode = `
+self.addEventListener('install',e=>{
+self.skipWaiting()
+})
+
+self.addEventListener('fetch',event=>{
+// simple offline passthrough
+})
+`
+
+      const blob = new Blob([swCode], { type: 'text/javascript' })
+      const swURL = URL.createObjectURL(blob)
+
+      navigator.serviceWorker.register(swURL)
+
+    }
+
+  </script>
+
+</body>
+
+</html>
