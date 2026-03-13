@@ -150,7 +150,7 @@
     }
 
     .chart-scroll canvas {
-      min-width: 650px;
+      min-width: 800px;
       /* allows horizontal swipe on phones */
     }
 
@@ -339,18 +339,21 @@
         <b>Bear</b>
         <div>Price: <span id="bearPrice">-</span></div>
         <div>CAGR: <span id="bearCagr">-</span></div>
+        <div>Estimated Growth/Y: <span id="bearGrowthY">-</span>%</div>
       </div>
 
       <div class="scenario">
         <b>Base</b>
         <div>Price: <span id="basePrice">-</span></div>
         <div>CAGR: <span id="baseCagr">-</span></div>
+        <div>Estimated Growth/Y: <span id="baseGrowthY">-</span>%</div>
       </div>
 
       <div class="scenario">
         <b>Bull</b>
         <div>Price: <span id="bullPrice">-</span></div>
         <div>CAGR: <span id="bullCagr">-</span></div>
+        <div>Estimated Growth/Y: <span id="bullGrowthY">-</span>%</div>
       </div>
 
     </div>
@@ -405,8 +408,9 @@
         const estPrice = avgEps * newPE
 
         const cagr = (Math.pow(estPrice / price, 1 / years) - 1) * 100
+        const growthY = (estPrice - price) * 100 / price / years;
 
-        return { price: estPrice, cagr: cagr }
+        return { price: estPrice, cagr: cagr, growthY: growthY }
 
       }
 
@@ -423,14 +427,17 @@
 
       document.getElementById("bearPrice").innerText = bear.price.toFixed(2)
       document.getElementById("bearCagr").innerText = bear.cagr.toFixed(2) + " %"
+      document.getElementById('bearGrowthY').innerText = bear.growthY.toFixed(2)
 
 
       document.getElementById("basePrice").innerText = base.price.toFixed(2)
       document.getElementById("baseCagr").innerText = base.cagr.toFixed(2) + " %"
+      document.getElementById('baseGrowthY').innerText = base.growthY.toFixed(2)
 
 
       document.getElementById("bullPrice").innerText = bull.price.toFixed(2)
       document.getElementById("bullCagr").innerText = bull.cagr.toFixed(2) + " %"
+      document.getElementById('bullGrowthY').innerText = bull.growthY.toFixed(2)
 
       createScenarioChart(bear, base, bull)
       createMonteCarlo(price, avgEps, pe, years)
